@@ -24,9 +24,9 @@ struct ScanReport {
 
 fn main() {
     let player_uuid = env::args().nth(1).unwrap_or_else(|| "unknown".to_string());
-    let mut sys = System::new_all();
-    sys.refresh_all();
-    let hostname = sys.host_name().unwrap_or_else(|| "unknown".to_string());
+    
+    // Correção: usando a sintaxe de função associada sugerida pelo compilador
+    let hostname = sysinfo::System::host_name().unwrap_or_else(|| "unknown".to_string());
     
     let mut detections = Vec::new();
 
