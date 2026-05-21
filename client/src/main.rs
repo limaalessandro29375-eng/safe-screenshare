@@ -3,7 +3,7 @@
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use sysinfo::{System, ProcessExt, SystemExt};
+use sysinfo::System;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
