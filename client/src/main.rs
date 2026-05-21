@@ -1,12 +1,9 @@
 #![windows_subsystem = "windows"]
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
-use std::io::Read;
-use std::path::{Path, PathBuf};
 use std::process::Command;
 use sysinfo::System;
 use walkdir::WalkDir;
@@ -14,7 +11,7 @@ use winreg::enums::*;
 use winreg::RegKey;
 
 // OFUSCAÇÃO BÁSICA DE STRINGS (Simulação)
-const WEBHOOK: &str = "https://discord.com/api/webhooks/1507112513622249472/_kI_l42Kls7Irrz0SKFtq5I6M4IgOdch0g9E23eo87WUzFIE9VUcZ9BKaxSTe_i56DaI";
+const WEBHOOK: &str = "TU_URL_DO_WEBHOOK_AQUI";
 
 #[derive(Serialize)]
 struct ScanReport {
@@ -81,7 +78,7 @@ fn perform_file_scan(detections: &mut Vec<String>) {
 fn perform_registry_scan(detections: &mut Vec<String>) {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist";
-    if let Ok(key) = hkcu.open_subkey(path) {
+    if let Ok(_key) = hkcu.open_subkey(path) {
         detections.push("Registry activity detected in UserAssist".to_string());
     }
 }
