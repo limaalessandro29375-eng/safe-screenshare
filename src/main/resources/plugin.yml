@@ -1,0 +1,20 @@
+name: SafeScreenShare
+version: '1.0.0'
+main: xyz.bl4ckzx.safescreenshare.SafeScreenSharePlugin
+api-version: '1.20'
+authors: [bl4ckzx]
+description: Plugin avançado de telagem automática e segurança.
+commands:
+  telagemautomatica:
+    description: Inicia uma telagem automática.
+    usage: /telagemautomatica <jogador>
+  aceitar:
+    description: Aceita a telagem.
+  recusar:
+    description: Recusa a telagem.
+  ss:
+    description: Inicia uma telagem para um jogador.
+    usage: /ss <jogador>
+  telagem:
+    description: Gerencia jogadores em telagem.
+    usage: /telagem

@@ -1,0 +1,16 @@
+name: Build SafeScreenShare
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release --manifest-path client/Cargo.toml
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: SafeScreenShare-Executable
+          path: client/target/release/safescreenshare.exe
