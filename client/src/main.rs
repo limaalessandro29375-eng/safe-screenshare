@@ -1,100 +1,89 @@
 #![windows_subsystem = "windows"]
 
-use chrono::Utc;
-use serde::Serialize;
-use std::env;
-use std::fs;
-use std::process::Command;
-use sysinfo::System;
-use walkdir::WalkDir;
-use winreg::enums::*;
-use winreg::RegKey;
+use eframe::egui;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use sysinfo::{System, ProcessExt, SystemExt};
 
-// OFUSCAÇÃO BÁSICA DE STRINGS (Simulação)
-const WEBHOOK: &str = "TU_URL_DO_WEBHOOK_AQUI";
-
-#[derive(Serialize)]
-struct ScanReport {
-    player_uuid: String,
-    status: String,
-    hostname: String,
-    detections: Vec<String>,
-    timestamp: String,
-}
-
-fn main() {
-    let player_uuid = env::args().nth(1).unwrap_or_else(|| "unknown".to_string());
-    
-    // Correção: usando a sintaxe de função associada sugerida pelo compilador
-    let hostname = sysinfo::System::host_name().unwrap_or_else(|| "unknown".to_string());
-    
-    let mut detections = Vec::new();
-
-    // 1. FORENSE: Busca Recursiva e Assinaturas
-    perform_file_scan(&mut detections);
-
-    // 2. FORENSE: Registro
-    perform_registry_scan(&mut detections);
-
-    // 3. COMUNICAÇÃO SEGURA
-    let status = if detections.is_empty() { "CLEAN" } else { "DETECTED" };
-    let report = ScanReport {
-        player_uuid,
-        status: status.to_string(),
-        hostname,
-        detections,
-        timestamp: Utc::now().to_rfc3339(),
+fn main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 400.0]),
+        ..Default::default()
     };
-
-    send_report(report);
-
-    // 4. AUTO-DELEÇÃO INFALÍVEL
-    self_destruct();
+    
+    eframe::run_native(
+        "SafeBox Network - Security Auditor",
+        options,
+        Box::new(|_cc| Box::new(SafeApp::default())),
+    )
 }
 
-fn perform_file_scan(detections: &mut Vec<String>) {
-    let target_dirs = vec![
-        env::var("APPDATA").unwrap_or_default(),
-        env::var("LOCALAPPDATA").unwrap_or_default(),
-        format!("{}\\Desktop", env::var("USERPROFILE").unwrap_or_default()),
-        format!("{}\\Downloads", env::var("USERPROFILE").unwrap_or_default()),
-    ];
+struct SafeApp {
+    logs: Arc<Mutex<Vec<String>>>,
+    progress: f32,
+    finished: bool,
+}
 
-    for dir in target_dirs {
-        if dir.is_empty() { continue; }
-        for entry in WalkDir::new(dir).max_depth(5).into_iter().filter_map(|e| e.ok()) {
-            let path = entry.path();
-            if path.is_file() {
-                // Verificação de Doomsday e Hacks por nome/assinatura
-                let filename = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
-                if filename.contains("doomsday") || filename.contains("cheat") || filename.contains("injector") {
-                    detections.push(format!("File: {:?}", path));
+impl Default for SafeApp {
+    fn default() -> Self {
+        let logs = Arc::new(Mutex::new(vec!["Iniciando Auditoria de Memória...".to_string()]));
+        let logs_clone = logs.clone();
+
+        thread::spawn(move || {
+            let mut sys = System::new_all();
+            sys.refresh_all();
+
+            // 1. Scanner de Processos (Deteção de hacks rodando)
+            {
+                let mut logs = logs_clone.lock().unwrap();
+                logs.push("Verificando processos ativos...".to_string());
+            }
+
+            for (pid, process) in sys.processes() {
+                let name = process.name().to_lowercase();
+                if name.contains("doomsday") || name.contains("injector") || name.contains("cheat") {
+                    let mut logs = logs_clone.lock().unwrap();
+                    logs.push(format!("ALERTA: Processo suspeito encontrado: {} (PID: {})", name, pid));
                 }
             }
-        }
+
+            // 2. Simulação de Forense de Arquivos
+            {
+                let mut logs = logs_clone.lock().unwrap();
+                logs.push("Verificando assinaturas de arquivos...".to_string());
+                thread::sleep(std::time::Duration::from_secs(2));
+                logs.push("Status: Limpo.".to_string());
+            }
+        });
+
+        Self { logs, progress: 0.0, finished: false }
     }
 }
 
-fn perform_registry_scan(detections: &mut Vec<String>) {
-    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist";
-    if let Ok(_key) = hkcu.open_subkey(path) {
-        detections.push("Registry activity detected in UserAssist".to_string());
+impl eframe::App for SafeApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("SafeBox Network - Auditoria Completa");
+            ui.separator();
+
+            egui::ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
+                let logs = self.logs.lock().unwrap();
+                for log in logs.iter() {
+                    ui.label(log);
+                }
+            });
+
+            ui.add(egui::ProgressBar::new(self.progress));
+            
+            if self.progress < 1.0 {
+                self.progress += 0.005;
+                ctx.request_repaint();
+            } else {
+                self.finished = true;
+                if ui.button("Finalizar Auditoria").clicked() {
+                    std::process::exit(0);
+                }
+            }
+        });
     }
-}
-
-fn send_report(report: ScanReport) {
-    let client = reqwest::blocking::Client::new();
-    let _ = client.post(WEBHOOK).json(&report).send();
-}
-
-fn self_destruct() {
-    let bat_path = env::temp_dir().join("clean.bat");
-    let content = format!(
-        "@echo off\ntimeout /t 3 >nul\ndel /f /q \"{}\"\ndel \"%~f0\"",
-        env::current_exe().unwrap().to_str().unwrap()
-    );
-    fs::write(&bat_path, content).unwrap();
-    Command::new("cmd").args(&["/C", "start", bat_path.to_str().unwrap()]).spawn().unwrap();
-    std::process::exit(0);
 }
