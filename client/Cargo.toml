@@ -11,3 +11,13 @@ walkdir = "2.3"
 sha2 = "0.10"
 hex = "0.4"
 sysinfo = "0.30"
+winreg = "0.50"
+chrono = "0.4"
+base64 = "0.21"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
